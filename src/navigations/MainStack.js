@@ -1,6 +1,6 @@
 import { createStackNavigator } from 'react-navigation-stack'
-import DashBoardScreen from '../containers/DashBoard/DashBoardScreen'
-import MessagesScreen from '../containers/Messages/MessagesScreen'
+import DashBoardScreen from '../screens/DashBoard/DashBoardScreen'
+import MessagesScreen from '../screens/Messages/MessagesScreen'
 
 const MainStack = createStackNavigator(
   {
