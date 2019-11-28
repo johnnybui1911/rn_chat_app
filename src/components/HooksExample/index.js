@@ -9,12 +9,14 @@ import { messagesReducer } from './reducers'
 import { firebaseService } from '../../services'
 
 export default function HooksExample() {
-  const { uid } = useContext(UserContext)
+  const {
+    user: { uid }
+  } = useContext(UserContext)
   const [messages, dispatchMessages] = useReducer(messagesReducer, [])
 
   useEffect(() => {
     firebaseService.messageRef
-      .orderBy('created_at', 'desc')
+      .orderBy('createAt', 'desc')
       .onSnapshot(snapshot => {
         dispatchMessages({ type: 'add', payload: snapshot.docs })
       })

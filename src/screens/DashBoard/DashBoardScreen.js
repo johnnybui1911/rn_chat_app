@@ -16,13 +16,70 @@ import {
   Text,
   StatusBar,
   FlatList,
-  Image,
+  ActivityIndicator,
   TouchableWithoutFeedback
 } from 'react-native'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import pallete from '../../assets/pallete'
+import { UserContext } from '../../contexts'
+import FriendContainer from './FriendContainer'
+import { firebaseService } from '../../services'
+import images from '../../assets/images'
+import { Avatar } from './Avatar'
 
-const DashBoardScreen: () => React$Node = ({ navigation }) => {
+export const DashBoardScreen: () => React$Node = ({ navigation }) => {
+  const { user } = React.useContext(UserContext)
+  const { uid } = user
+
+  const [userDetail, setUserDetail] = React.useState(null)
+
+  useEffect(() => {
+    firebaseService.fetchUserDetail(uid).then(userData => {
+      const { name } = userData
+      setUserDetail({ name })
+    })
+  }, [])
+
+  const [loading, setLoading] = React.useState(true)
+  const [rooms, setRooms] = React.useState([])
+  useEffect(() => {
+    firebaseService.fetchRoomsByUser().then(roomList => {
+      // console.log(roomList)
+      setRooms(roomList)
+      setLoading(false)
+    })
+  }, [])
+
+  const [contacts, setContacts] = React.useState({})
+
+  useEffect(() => {
+    firebaseService.fetchUsers().then(users => {
+      const newContacts = {}
+      users
+        .filter(snapshot => snapshot.id != uid)
+        .forEach(documentSnapshot => {
+          const data = documentSnapshot.data()
+          const id = documentSnapshot.id
+          newContacts[id] = {
+            id,
+            name: data.name
+          }
+        })
+
+      firebaseService.fetchRoomsByUser().then(roomList => {
+        // console.log(roomList)
+        roomList.forEach(room => {
+          const { adminId } = room
+          delete newContacts[adminId]
+        })
+        setRooms(roomList)
+        setLoading(false)
+        setContacts(newContacts)
+        console.log('rooms', rooms)
+      })
+    })
+  }, [])
+
   const [refresh, setRefresh] = useState(false)
 
   useEffect(() => {
@@ -35,6 +92,13 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
     setRefresh(true)
   }
 
+  const contactList = []
+  Object.entries(contacts).forEach(([key, value]) => {
+    contactList.push(value)
+  })
+
+  console.log('contactList', contactList)
+
   return (
     <>
       <SafeAreaView style={{ flex: 1, backgroundColor: 'red' }}>
@@ -42,10 +106,23 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
           style={{ flex: 1, paddingVertical: 24, justifyContent: 'center' }}
         >
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 50, paddingLeft: 24 }}>
-              {/* <Icon name="arrow-left" size={24} color="#fff" /> */}
+            <View
+              style={{
+                flex: 1,
+                paddingLeft: 24,
+                flexDirection: 'row',
+                alignItems: 'center'
+              }}
+            >
+              <Avatar size={40} source={images.avar2} />
+              <Text style={{ color: pallete.whiteColor, marginLeft: 12 }}>
+                {userDetail && userDetail.name}
+                {/* {displayName || email} */}
+              </Text>
             </View>
-            <View style={{ flex: 1, paddingRight: 24, alignItems: 'flex-end' }}>
+            <View
+              style={{ width: 50, paddingRight: 24, alignItems: 'flex-end' }}
+            >
               <Icon name="search" size={24} color="#fff" />
             </View>
           </View>
@@ -74,11 +151,13 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
         >
           <View
             style={{
-              flex: 1,
+              // flex: 1,
               backgroundColor: '#FDF8E7',
               borderTopRightRadius: 36,
               borderTopLeftRadius: 36,
-              paddingVertical: 12
+              paddingVertical: 12,
+              // height: 180
+              minHeight: 40
               // maxHeight: 120
             }}
           >
@@ -86,8 +165,8 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
               style={{
                 flex: 1,
                 flexDirection: 'row',
-                paddingHorizontal: 24,
-                alignItems: 'flex-end'
+                paddingHorizontal: 24
+                // alignItems: 'center',
               }}
             >
               <View style={{ flex: 1 }}>
@@ -96,8 +175,8 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
               <View
                 style={{
                   width: 50,
-                  alignItems: 'flex-end',
-                  justifyContent: 'center'
+                  alignItems: 'flex-end'
+                  // justifyContent: 'center'
                 }}
               >
                 <Icon name="ellipsis-h" size={18} color="#000" />
@@ -106,39 +185,39 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
             <FlatList
               horizontal
               contentContainerStyle={{
-                paddingHorizontal: 12
+                paddingHorizontal: 12,
+                marginTop: 32
               }}
               showsHorizontalScrollIndicator={false}
-              data={[1, 2, 3, 4, 5, 6, 7]}
+              data={contactList}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item, index }) => {
+                const { name, id } = item
                 return (
-                  <View
-                    key={index}
-                    style={{
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      paddingHorizontal: 12
+                  <TouchableWithoutFeedback
+                    onPress={() => {
+                      navigation.navigate('Messages', {
+                        item,
+                        newMess: true
+                      })
                     }}
                   >
                     <View
+                      key={id}
                       style={{
-                        height: 60,
-                        width: 60,
-                        borderRadius: 60 / 2,
-                        backgroundColor: 'grey'
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingHorizontal: 12
                       }}
                     >
-                      <Image
-                        source={{
-                          uri: 'https://i.pravatar.cc/40?img=5'
-                        }}
-                        style={{ height: 60, width: 60, borderRadius: 60 / 2 }}
-                        resizeMode="contain"
+                      <Avatar
+                        key={id}
+                        size={60}
+                        source={index % 2 === 0 ? images.avar1 : images.avar2}
                       />
+                      <Text style={{ paddingTop: 8 }}>{name}</Text>
                     </View>
-                    <Text style={{ paddingTop: 8 }}>Ella</Text>
-                  </View>
+                  </TouchableWithoutFeedback>
                 )
               }}
             />
@@ -146,7 +225,7 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
           <View
             style={{
               backgroundColor: '#fff',
-              flex: 2,
+              flex: 1,
               borderTopLeftRadius: 26,
               borderTopRightRadius: 26
             }}
@@ -154,6 +233,14 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
             <FlatList
               onRefresh={_onRefresh}
               refreshing={refresh}
+              ListFooterComponent={() => {
+                return loading ? (
+                  <ActivityIndicator
+                    size="large"
+                    color={pallete.primaryColor}
+                  />
+                ) : null
+              }}
               contentContainerStyle={{
                 paddingVertical: 12
               }}
@@ -162,99 +249,10 @@ const DashBoardScreen: () => React$Node = ({ navigation }) => {
               )}
               keyExtractor={(item, index) => index.toString()}
               showsVerticalScrollIndicator={false}
-              data={[1, 2, 3, 4, 5, 6]}
-              renderItem={({ item, index }) => (
-                <TouchableWithoutFeedback
-                  onPress={() => navigation.navigate('Messages')}
-                >
-                  <View
-                    key={item}
-                    style={{
-                      flexDirection: 'row',
-                      paddingVertical: 24,
-                      paddingLeft: 24,
-                      paddingRight: 24 - 4,
-                      marginRight: 24,
-                      borderTopRightRadius: 16,
-                      borderBottomRightRadius: 16,
-                      backgroundColor:
-                        index === 5
-                          ? pallete.primaryColorLight
-                          : pallete.whiteColor,
-                      alignItems: 'center'
-                    }}
-                  >
-                    <View style={{ paddingRight: 12 }}>
-                      <View
-                        style={{
-                          height: 60,
-                          width: 60,
-                          borderRadius: 60 / 2,
-                          backgroundColor: 'grey'
-                        }}
-                      >
-                        <Image
-                          source={{
-                            uri: 'https://i.pravatar.cc/60?img=15'
-                          }}
-                          style={{
-                            height: 60,
-                            width: 60,
-                            borderRadius: 60 / 2
-                          }}
-                          resizeMode="contain"
-                        />
-                      </View>
-                    </View>
-                    <View
-                      style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        paddingRight: 12
-                      }}
-                    >
-                      <Text style={{ marginBottom: 8 }}>James</Text>
-                      <Text>See you soon</Text>
-                    </View>
-
-                    <View
-                      style={{
-                        width: 50,
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Text
-                        style={{
-                          marginBottom: 8,
-                          fontSize: 12,
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        17:40
-                      </Text>
-                      <View
-                        style={{
-                          backgroundColor: pallete.primaryColor,
-                          paddingVertical: 2,
-                          borderRadius: 16,
-                          paddingHorizontal: 10,
-                          opacity: index === 5 ? 1 : 0
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 'bold',
-                            color: pallete.whiteColor
-                          }}
-                        >
-                          NEW
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
-              )}
+              data={rooms}
+              renderItem={({ item, index }) => {
+                return <FriendContainer item={item} index={index} />
+              }}
             />
           </View>
         </View>

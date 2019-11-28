@@ -1,10 +1,37 @@
+/* eslint-disable react-native/no-inline-styles */
 import React from 'react'
-import { View, TextInput } from 'react-native'
+import {
+  View,
+  TextInput,
+  Text,
+  TouchableWithoutFeedback,
+  ActivityIndicator
+} from 'react-native'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import pallete from '../../assets/pallete'
 import { SCREEN_WIDTH } from '../../assets/dimensions'
+import { UserContext } from '../../contexts'
+import { firebaseService } from '../../services'
 
-const InputKeyboard = ({ input, setInput }) => {
+const InputKeyboard = ({ toUid }) => {
+  const {
+    user: { uid }
+  } = React.useContext(UserContext)
+  const [message, setMessage] = React.useState('')
+  const [isLoading, setIsLoading] = React.useState(false)
+
+  const handleSendMess = React.useCallback(
+    function() {
+      setIsLoading(true)
+      console.log({ uid, toUid })
+      firebaseService.createMessage({ message, uid, toUid }).then(() => {
+        setIsLoading(false)
+        setMessage('')
+      })
+    },
+    [message]
+  )
+
   return (
     <View
       style={{
@@ -40,10 +67,9 @@ const InputKeyboard = ({ input, setInput }) => {
             <TextInput
               multiline
               placeholder="Type your message..."
-              value={input}
-              onChangeText={text => setInput(text)}
+              value={message}
+              onChangeText={text => setMessage(text)}
               style={{
-                // backgroundColor: pallete.secondaryColor,
                 width: '100%',
                 padding: 12,
                 fontSize: 16,
@@ -52,15 +78,31 @@ const InputKeyboard = ({ input, setInput }) => {
             />
           </View>
         </View>
-        <View
-          style={{
-            width: 50,
-            paddingRight: 12,
-            alignItems: 'flex-end'
-          }}
-        >
-          <AntDesign name="paperclip" size={24} color={pallete.greyColor} />
-        </View>
+        <TouchableWithoutFeedback onPress={handleSendMess}>
+          <View
+            style={{
+              width: 50,
+              paddingRight: 12,
+              alignItems: 'flex-end'
+            }}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={pallete.primaryColor} />
+            ) : (
+              <Text
+                style={{
+                  width: '100%',
+                  fontSize: 14,
+                  fontWeight: 'bold'
+                }}
+              >
+                Send
+              </Text>
+            )}
+
+            {/* <AntDesign name="paperclip" size={24} color={pallete.greyColor} /> */}
+          </View>
+        </TouchableWithoutFeedback>
       </View>
     </View>
   )

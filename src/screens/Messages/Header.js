@@ -5,7 +5,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import pallete from '../../assets/pallete'
 
-const Header = ({ navigation }) => (
+const Header = ({ navigation, label }) => (
   <View
     style={{
       paddingVertical: 24,
@@ -50,7 +50,7 @@ const Header = ({ navigation }) => (
             color: pallete.whiteColor
           }}
         >
-          Betty
+          {label}
         </Text>
       </View>
       <View style={{ width: 50, paddingRight: 24 - 4, alignItems: 'flex-end' }}>
@@ -64,4 +64,4 @@ const Header = ({ navigation }) => (
   </View>
 )
 
-export default withNavigation(Header)
+export default Header

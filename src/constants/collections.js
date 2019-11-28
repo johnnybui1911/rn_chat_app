@@ -1,3 +1,6 @@
 export default {
-  MESSAGES: 'messages'
+  CHATS: 'chats',
+  USERS: 'users',
+  ROOMS: 'rooms',
+  ROOM_DETAILS: 'roomDetails'
 }
